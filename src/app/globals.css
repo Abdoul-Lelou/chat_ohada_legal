@@ -1,26 +1,140 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #030712; /* gray-950 */
+    --foreground: #f9fafb; /* gray-50 */
+    --card: #111827; /* gray-900 */
+    --card-foreground: #f3f4f6; /* gray-100 */
+    --popover: #111827;
+    --popover-foreground: #f9fafb;
+    --primary: #10b981; /* emerald-500 */
+    --primary-foreground: #ffffff;
+    --secondary: #1f2937; /* gray-800 */
+    --secondary-foreground: #f9fafb;
+    --muted: #374151; /* gray-700 */
+    --muted-foreground: #9ca3af; /* gray-400 */
+    --accent: #111827;
+    --accent-foreground: #f9fafb;
+    --destructive: #ef4444;
+    --destructive-foreground: #f9fafb;
+    --border: #1f2937; /* gray-800 */
+    --input: #1f2937;
+    --ring: #10b981;
+    --radius: 1rem; /* Pronounced rounding as requested */
+    
+    /* 🏛️ Semantic SaaS Tokens */
+    --status-info: #22d3ee;    /* Cyan - Articles */
+    --status-warning: #f59e0b; /* Amber/Gold - Titles */
+    --status-error: #f87171;   /* Soft Red - Prohibitions */
+    --status-assistant: #059669; /* Emerald - Assistant Bg */
+    --status-user: #1f2937;      /* Dark Gray - User Bg */
+    
+    --sidebar-width: 16rem;
+    --sidebar-collapsed: 4.5rem;
+    --transition-speed: 200ms;
+  }
+
+  [data-theme='light'] {
+    --background: #f8fafc; /* slate-50 */
+    --foreground: #0f172a; /* slate-900 */
+    --card: #ffffff;
+    --card-foreground: #1e293b; /* slate-800 */
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #059669; /* emerald-600 */
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9; /* slate-100 */
+    --secondary-foreground: #1e293b;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b; /* slate-500 */
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --border: #e2e8f0; /* slate-200 */
+    --input: #e2e8f0;
+    --ring: #059669;
+    
+    /* 🏛️ Light Mode Semantics (High Contrast) */
+    --status-info: #0891b2;    /* Darker Cyan */
+    --status-warning: #d97706; /* Darker Gold */
+    --status-assistant: #ecfdf5; /* Very Light Emerald */
+    --status-user: #f1f5f9;      /* Light Gray/Slate */
   }
 }
 
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Optimized Legal Reading Class */
+  .prose-legal {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--card-foreground);
+    width: 100%;
+  }
+  
+  .prose-legal h1, .prose-legal h2, .prose-legal h3 {
+    color: var(--status-warning);
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    letter-spacing: -0.02em;
+  }
+  
+  .prose-legal strong {
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  [data-theme='light'] .prose-legal strong {
+    color: #000000;
+  }
+
+  /* ⚖️ Legal Table Styling */
+  .legal-table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+  }
+  
+  .legal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  
+  .legal-table th {
+    background: var(--secondary);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .legal-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Bubble Base Transitions */
+  .bubble-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

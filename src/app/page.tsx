@@ -1,64 +1,125 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { Bot, AlertCircle, Menu } from 'lucide-react';
+import Sidebar from '@/components/Sidebar';
+import ChatZone from '@/components/ChatZone';
+import ChatInput from '@/components/ChatInput';
+import { useChatStore } from '@/store/useChatStore';
+import { chatService } from '@/services/chatService';
+import { chatUtils } from '@/lib/chat-utils';
+
+const EMPTY_MESSAGES: any[] = [];
+
+export default function ChatPage() {
+  const [input, setInput] = useState('');
+  const [mounted, setMounted] = useState(false);
+  
+  // 🧠 State from Zustand Store (Selectors for performance)
+  const activeId = useChatStore((state) => state.activeId);
+  const messages = useChatStore((state) => (activeId ? state.messages[activeId] : null) || EMPTY_MESSAGES);
+  const isStreaming = useChatStore((state) => state.isStreaming);
+  
+  const addMessage = useChatStore((state) => state.addMessage);
+  const createConversation = useChatStore((state) => state.createConversation);
+  const toggleMobileSidebar = useChatStore((state) => state.toggleMobileSidebar);
+
+  // 🛡️ Safe Hydration for Next.js
+  useEffect(() => {
+    const init = async () => {
+      // @ts-ignore
+      await useChatStore.persist.rehydrate();
+      setMounted(true);
+    };
+    init();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => setInput(e.target.value);
+
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
+    if (!input.trim() || isStreaming) return;
+
+    let targetConvId = activeId;
+    const userMessageContent = input.trim();
+
+    // 1. 🧠 Smart Auto-Creation
+    if (!targetConvId) {
+      // 🛂 Get user from Supabase for metadata consistency
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const generatedTitle = chatUtils.generateAutoTitle(userMessageContent);
+      targetConvId = createConversation(generatedTitle, user?.id);
+    }
+
+    // 2. Add User Message to Store
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content: userMessageContent,
+    };
+    
+    addMessage(targetConvId, userMessage);
+    setInput('');
+
+    // 3. 🚀 Trigger AI Response via Service Layer
+    const updatedMessages = [...messages, userMessage];
+    await chatService.sendMessage(targetConvId, updatedMessages);
+  };
+
+  if (!mounted) {
+    return (
+      <div className="flex h-screen bg-[var(--background)] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center animate-pulse">
+            <Bot size={24} className="text-[var(--primary)]" />
+          </div>
+          <span className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-widest animate-pulse">Chargement OHADA...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden font-sans transition-colors duration-300">
+      <Sidebar />
+      
+      <main className="flex-1 flex flex-col relative w-full h-full bg-[var(--background)] min-w-0">
+        {/* Mobile Header (SaaS Polish) */}
+        <div className="md:hidden flex items-center justify-between p-3 bg-[var(--card)] border-b border-[var(--border)] shrink-0 shadow-sm z-50 transition-colors">
+          <button 
+            onClick={toggleMobileSidebar}
+            className="p-2 text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu size={20} />
+          </button>
+          
+          <h1 className="text-base font-bold text-[var(--primary)] uppercase tracking-tight">OHADA Legal</h1>
+          
+          <div className="w-8 h-8 rounded-full bg-[var(--secondary)] flex items-center justify-center">
+            <Bot size={18} className="text-[var(--primary)]" />
+          </div>
+        </div>
+
+        {/* 🟡 Unsaved Session Banner */}
+        {!activeId && messages.length === 0 && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[var(--secondary)] border border-[var(--border)] text-[var(--muted-foreground)] text-xs font-medium rounded-full shadow-lg z-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
+            <AlertCircle size={14} className="text-[var(--primary)]" />
+            <span>Nouvelle session · L'historique sera créé à l'envoi du message</span>
+          </div>
+        )}
+
+        <ChatZone messages={messages} isLoading={isStreaming} />
+        
+        <ChatInput 
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          isLoading={isStreaming} 
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
       </main>
     </div>
   );
