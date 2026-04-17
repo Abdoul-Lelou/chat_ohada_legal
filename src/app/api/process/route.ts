@@ -6,24 +6,32 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export const maxDuration = 300; // Chunking + embeddings can be slow
+export const maxDuration = 300; 
 
 export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
 
-  // Parse body ONCE — req.json() can only be read once
   let documentId: string | null = null;
   let storagePath: string | null = null;
+
   try {
     const body = await req.json();
     documentId = body.documentId;
     storagePath = body.storagePath;
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
+    return new Response(JSON.stringify({ 
+      error: true, 
+      message: "Format de requête invalide.", 
+      code: 'ERR_INVALID_REQUEST' 
+    }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
   if (!documentId || !storagePath) {
-    return new Response(JSON.stringify({ error: 'documentId and storagePath are required' }), { status: 400 });
+    return new Response(JSON.stringify({ 
+      error: true, 
+      message: "Identifiants de document manquants.", 
+      code: 'ERR_INVALID_REQUEST' 
+    }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
   const stream = new ReadableStream({
@@ -37,61 +45,48 @@ export async function POST(req: NextRequest) {
       try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Unauthorized');
+        if (!user) throw new Error('ERR_UNAUTHORIZED');
 
         const adminSupabase = createAdminClient();
 
-        // --- Fetch document metadata (title, source_type) ---
         const { data: doc, error: docErr } = await adminSupabase
           .from('documents')
           .select('title, source_type')
           .eq('id', documentId)
           .single();
 
-        if (docErr || !doc) throw new Error('Document introuvable dans la base');
+        if (docErr || !doc) throw new Error('ERR_RAG_NO_DATA');
 
         const { title, source_type } = doc;
 
-        // =====================================================================
-        // STEP 1 — Extract text from PDF stored in Supabase Storage
-        // =====================================================================
-        send('progress', { step: 'EXTRACTION', message: 'Téléchargement et extraction du texte PDF...' });
+        // STEP 1 — Extraction
+        send('progress', { step: 'EXTRACTION', message: 'Extraction du texte juridique...' });
 
         const { data: fileData, error: downloadError } = await adminSupabase.storage
           .from('documents')
           .download(storagePath);
 
-        if (downloadError || !fileData) throw new Error('Impossible de télécharger le fichier depuis le Storage');
+        if (downloadError || !fileData) throw new Error('Impossible de charger le fichier source.');
 
-        // Dynamically import pdf-parse (v2.4.5 is ESM-only)
         const pdfModule = await import('pdf-parse');
         const PDFParser = pdfModule.PDFParse;
 
-        if (!PDFParser) throw new Error('Le module PDFParse (classe) est introuvable.');
-
-        // Configure worker for Node.js environment to avoid "Cannot find module 'pdf.worker.mjs'"
         const path = await import('path');
         const { pathToFileURL } = await import('url');
         const workerPath = path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
-        
-        // On Windows, absolute paths must be valid file:// URLs for the ESM loader
         const workerUrl = pathToFileURL(workerPath).toString();
         PDFParser.setWorker(workerUrl);
 
         const buffer  = Buffer.from(await fileData.arrayBuffer());
-        
         const parser = new PDFParser({ data: buffer });
         const pdfData = await parser.getText();
         const rawText = pdfData.text?.trim();
-        
         await parser.destroy();
         
-        if (!rawText) throw new Error('Aucun texte extrait du PDF. Le fichier est peut-être scanné.');
+        if (!rawText) throw new Error('Aucun texte exploitable n\'a été trouvé dans le document.');
 
-        // =====================================================================
         // STEP 2 — Chunking
-        // =====================================================================
-        send('progress', { step: 'CHUNKING', message: 'Découpage du texte en paragraphes...' });
+        send('progress', { step: 'CHUNKING', message: 'Analyse de la structure...' });
 
         const splitter = new RecursiveCharacterTextSplitter({
           chunkSize:    1000,
@@ -99,30 +94,17 @@ export async function POST(req: NextRequest) {
         });
         const chunks = await splitter.createDocuments([rawText]);
 
-        send('progress', {
-          step:    'CHUNKING_DONE',
-          message: `${chunks.length} paragraphes extraits.`,
-          total:   chunks.length,
-        });
-
-        // =====================================================================
-        // STEP 3 — Embedding generation (batched, with title enrichment)
-        //
-        // Key RAG improvement: prepend document title to every chunk so the
-        // vector space naturally clusters chunks by document/topic.
-        // =====================================================================
+        // STEP 3 — Embedding
         send('progress', {
           step:    'EMBEDDING',
-          message: `Génération des vecteurs pour ${chunks.length} paragraphes...`,
+          message: `Indexation de ${chunks.length} segments...`,
         });
 
-        const BATCH_SIZE = 50; // stay well within Gemini rate limits
+        const BATCH_SIZE = 50; 
         let processed = 0;
 
         for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
           const batch = chunks.slice(i, i + BATCH_SIZE);
-
-          // Enrich content: title prefix improves semantic clustering
           const enrichedTexts = batch.map((c) =>
             `Titre: ${title}\nSource: ${source_type}\n\n${c.pageContent}`
           );
@@ -130,63 +112,51 @@ export async function POST(req: NextRequest) {
           const response = await ai.models.embedContent({
             model:  'gemini-embedding-001',
             contents:             enrichedTexts,
-            outputDimensionality: 768,
+            outputDimensionality: 3072,
           });
 
-          const embeddingsArray = Array.isArray(response.embeddings)
-            ? response.embeddings
-            : [response.embedding];
+          const embeddingsArray = Array.isArray(response.embeddings) ? response.embeddings : [response.embedding];
 
           const dbChunks = batch.map((chunk, idx) => ({
             document_id: documentId,
-            content:     enrichedTexts[idx],    // store enriched content
+            content:     enrichedTexts[idx],
             embedding:   embeddingsArray[idx]?.values || [],
-            metadata: {
-              title,
-              source_type,
-              chunkIndex: i + idx,
-              // page detection is heuristic — can be improved with pdf.js
-              page: chunk.metadata?.loc?.pageNumber ?? null,
-            },
+            metadata: { title, source_type, chunkIndex: i + idx },
           }));
 
-          const { error: chunkError } = await adminSupabase
-            .from('document_chunks')
-            .insert(dbChunks);
-
-          if (chunkError) throw new Error(`Erreur base de données : ${chunkError.message}`);
+          const { error: chunkError } = await adminSupabase.from('document_chunks').insert(dbChunks);
+          if (chunkError) throw new Error('Erreur lors de l\'enregistrement des vecteurs.');
 
           processed += batch.length;
           send('progress', {
             step:    'EMBEDDING_PROGRESS',
-            message: `Vecteurs générés : ${processed}/${chunks.length}`,
+            message: `Traitement en cours : ${processed}/${chunks.length}`,
             percent: Math.round((processed / chunks.length) * 100),
           });
         }
 
-        // =====================================================================
-        // STEP 4 — Mark document as ready
-        // =====================================================================
-        await adminSupabase
-          .from('documents')
-          .update({ status: 'ready' })
-          .eq('id', documentId);
+        // STEP 4 — Ready
+        await adminSupabase.from('documents').update({ status: 'ready' }).eq('id', documentId);
 
-        send('done', { message: `Document "${title}" indexé avec succès. ${chunks.length} paragraphes vectorisés.` });
+        send('done', { message: `Le document est maintenant indexé et prêt.` });
         controller.close();
 
       } catch (error: any) {
-        console.error('Process Stream Error:', error);
-
-        // Mark document as errored (best-effort, documentId is captured in outer scope)
+        console.error('[PROCESS_STREAM_ERROR]', error);
+        
+        // Final status update
         try {
           const adminSupabase = createAdminClient();
-          if (documentId) {
-            await adminSupabase.from('documents').update({ status: 'error' }).eq('id', documentId);
-          }
+          if (documentId) await adminSupabase.from('documents').update({ status: 'error' }).eq('id', documentId);
         } catch (_) {}
 
-        send('error', { message: error.message || 'Une erreur interne est survenue' });
+        // Professional message transform
+        let professionalMessage = "Une erreur technique est survenue durant l'indexation.";
+        if (error.message === 'ERR_UNAUTHORIZED') professionalMessage = "Session expirée.";
+        if (error.message === 'ERR_RAG_NO_DATA') professionalMessage = "Le document est introuvable.";
+        if (error.message.includes('texte exploitable')) professionalMessage = error.message;
+
+        send('error', { message: professionalMessage, code: 'ERR_PROCESS_FAILED' });
         controller.close();
       }
     },

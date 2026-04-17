@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { GoogleGenAI } from '@google/genai';
+import { handleApiError } from '@/lib/utils/api-error';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -10,39 +11,34 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   try {
     // 0. Environment Validation
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("Missing GEMINI_API_KEY");
-    }
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("Missing ANTHROPIC_API_KEY");
+    if (!process.env.GEMINI_API_KEY || !process.env.ANTHROPIC_API_KEY) {
+      throw new Error("ERR_INVALID_REQUEST: Missing API keys in environment");
     }
 
     const { messages, conversationId } = await req.json();
 
     const latestMessage = messages[messages.length - 1]?.content;
     if (!latestMessage) {
-      return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400 });
+      throw new Error("ERR_INVALID_REQUEST: Missing message content");
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("ERR_UNAUTHORIZED");
 
     // =========================================================================
-    // STEP 1 — Embed logic (Forced 768 dim to match DB)
+    // STEP 1 — Embed logic (Forced 3072 dim to match USER latest change)
     // =========================================================================
     const embedResponse = await ai.models.embedContent({
       model:                'gemini-embedding-001',
       contents:             latestMessage,
-      outputDimensionality: 768,
+      // @ts-ignore
+      outputDimensionality: 3072,
     });
 
     const queryEmbedding = Array.isArray(embedResponse.embeddings)
       ? embedResponse.embeddings[0]?.values ?? []
       : embedResponse.embedding?.values ?? [];
-
-    // 🧪 DEBUG OBLIGATOIRE
-    console.log("--- DEBUG RAG ---");
-    console.log("Embedding length:", queryEmbedding.length);
 
     // =========================================================================
     // STEP 2 — RAG Match Logic with Fallback
@@ -60,12 +56,10 @@ export async function POST(req: Request) {
 
     let filtered = (candidates ?? []).filter((c: any) => c.similarity > 0.5);
     if (filtered.length === 0) {
-      console.log("⚠️ Fallback RAG activé");
       filtered = (candidates ?? []).slice(0, 3);
     }
 
     const topChunks = filtered.slice(0, 3);
-    console.log("Top scores:", (candidates ?? []).map((c: any) => c.similarity.toFixed(4)));
 
     // =========================================================================
     // STEP 3 — Structured Context & Prompt
@@ -95,12 +89,14 @@ ${c.content.trim()}
 
 ---
 
-### 3. CITATIONS
-* Tu ne dois citer un texte que s’il est **réellement présent** dans la base.
-* Interdiction de :
-  * reformuler en le présentant comme "mot pour mot"
-  * compléter une citation manquante
-* Si la citation est partielle → mentionne : "extrait incomplet".
+### 3. GÉNÉRATION DE MODÈLES ET TEMPLATES
+À la demande de l'utilisateur, fournis des modèles d'actes (ex : contrat de bail, statuts, clause d'arbitrage) adaptés au droit guinéen et OHADA.
+
+* **Source des données** : Utilise exclusivement les mentions obligatoires et les conditions de validité extraites des documents fournis (RAG) pour structurer le modèle. Si une mention obligatoire est absente des documents, indique-le clairement avec la balise : **[À COMPLÉTER]**.
+* **Avertissement obligatoire** (à inclure dans chaque rédaction) :
+  > « Ce modèle est fourni à titre informatif et indicatif. Il ne constitue pas un conseil juridique personnalisé et doit être validé par un professionnel du droit avant signature. »
+* **Structure** : Les modèles doivent être complets, professionnels et inclure des espaces réservés pour les informations spécifiques (noms, montants, dates, etc.).
+* **Consigne de sécurité** : Si les éléments constitutifs de l’acte ne sont pas présents dans la base de connaissance, ne les invente pas. Propose uniquement une structure générale basée sur la pratique OHADA courante, en précisant explicitement qu’il s’agit d’un cadre standard.
 
 ---
 
@@ -145,7 +141,6 @@ Fournir des réponses :
     // =========================================================================
     // STEP 4 — Stream with Anthropic Claude (Single Provider)
     // =========================================================================
-    // Prepare sources metadata to send via header
     const sourcesHeader = Buffer.from(JSON.stringify(
       topChunks.map((c: any) => ({
         title: c.metadata?.title || "Document juridique",
@@ -154,12 +149,11 @@ Fournir des réponses :
     )).toString('base64');
 
     const result = streamText({
-      model:  anthropic('claude-sonnet-4-6'), // Stable model
+      model:  anthropic('claude-sonnet-4-6'),
       system: systemPrompt,
       messages: augmentedMessages,
       async onFinish({ text }) {
         if (conversationId && user) {
-          // 1. Save messages
           await supabase.from('messages').insert([
             { conversation_id: conversationId, role: 'user', content: latestMessage },
             { conversation_id: conversationId, role: 'assistant', content: text, 
@@ -167,7 +161,6 @@ Fournir des réponses :
             },
           ]);
 
-          // 2. 🔥 Auto-name: update title if default
           const { data: conv } = await supabase
             .from('conversations')
             .select('title')
@@ -193,10 +186,6 @@ Fournir des réponses :
     });
 
   } catch (error: any) {
-    console.error('Chat API Error:', error);
-    return new Response(JSON.stringify({ error: "Erreur lors de la génération IA" }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return handleApiError(error, 'CHAT_API');
   }
 }

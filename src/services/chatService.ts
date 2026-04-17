@@ -4,6 +4,7 @@
  */
 
 import { useChatStore } from '@/store/useChatStore';
+import { parseApiError, handleUknownError } from '@/lib/error-parser';
 
 export const chatService = {
   /**
@@ -34,8 +35,6 @@ export const chatService = {
     const store = useChatStore.getState();
     const assistantMsgId = Date.now().toString();
 
-    // 🧠 AI Auto-Title Enhancement (Bonus)
-    // If the conversation title is generic, upgrade it using AI
     const conv = store.conversations.find(c => c.id === conversationId);
     if (conv && (conv.title === 'Nouvelle discussion' || !conv.title)) {
       this.generateSmartTitle(conversationId, messages[messages.length - 1].content);
@@ -53,7 +52,10 @@ export const chatService = {
         })
       });
 
-      if (!res.ok) throw new Error('Erreur réseau');
+      if (!res.ok) {
+        const friendly = await parseApiError(res);
+        throw new Error(friendly.message);
+      }
 
       // 🔍 Extract sources from headers
       const sourcesBase64 = res.headers.get('X-Sources');
@@ -69,7 +71,7 @@ export const chatService = {
       const reader = res.body?.getReader();
       const decoder = new TextDecoder('utf-8');
       
-      if (!reader) throw new Error('Pas de stream');
+      if (!reader) throw new Error("Erreur de connexion avec le service d'IA.");
 
       let done = false;
 
@@ -90,11 +92,11 @@ export const chatService = {
       }
 
     } catch (err: any) {
-      console.error('Service Chat Error:', err);
+      const friendly = handleUknownError(err);
       useChatStore.getState().addMessage(conversationId, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `⚠️ **Erreur** : ${err.message}`
+        content: `⚠️ ${friendly.message}`
       });
     } finally {
       useChatStore.getState().setStreaming(false);

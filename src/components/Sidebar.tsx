@@ -12,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useChatStore } from '@/store/useChatStore';
 import UploadModal from './UploadModal';
 import DocumentIndexModal from './DocumentIndexModal';
+import { parseApiError, handleUknownError } from '@/lib/error-parser';
 
 type DocumentItem = {
   id: string;
@@ -25,7 +26,6 @@ export default function Sidebar() {
   const [isIndexModalOpen, setIsIndexModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   
-  // 🧠 UI & Data from Zustand Store
   const conversations = useChatStore((state) => state.conversations);
   const activeId = useChatStore((state) => state.activeId);
   const isCollapsed = useChatStore((state) => state.isSidebarCollapsed);
@@ -42,20 +42,37 @@ export default function Sidebar() {
   const router = useRouter();
 
   const fetchDocuments = async () => {
-    const res = await fetch('/api/documents');
-    if (res.ok) {
-      const data = await res.json();
-      // 🛡️ Sanitize: Filter out items without IDs to avoid duplicate key errors
-      const validDocs = (data || []).filter((doc: DocumentItem) => doc && doc.id);
-      setDocuments(validDocs);
+    try {
+      const res = await fetch('/api/documents');
+      if (res.ok) {
+        const data = await res.json();
+        const validDocs = (data || []).filter((doc: DocumentItem) => doc && doc.id);
+        setDocuments(validDocs);
+      } else {
+        // Silently fail for sidebar listing to not annoy user, or log internally
+        const friendly = await parseApiError(res);
+        console.warn('[SIDEBAR_DOCS_FETCH_FAIL]', friendly.message);
+      }
+    } catch (err) {
+      const friendly = handleUknownError(err);
+      console.warn('[SIDEBAR_DOCS_FETCH_ERROR]', friendly.message);
     }
   };
 
   const deleteDocument = async (id: string) => {
-    const res = await fetch(`/api/documents?id=${id}`, { method: 'DELETE' });
-    if (!res.ok) return toast.error("Erreur lors de la suppression");
-    toast.success("Document supprimé");
-    setDocuments(documents.filter(d => d.id !== id));
+    try {
+      const res = await fetch(`/api/documents?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success("Document supprimé");
+        setDocuments(documents.filter(d => d.id !== id));
+      } else {
+        const friendly = await parseApiError(res);
+        toast.error(friendly.message);
+      }
+    } catch (err) {
+      const friendly = handleUknownError(err);
+      toast.error(friendly.message);
+    }
   };
 
   const handleLogout = async () => {
@@ -68,11 +85,10 @@ export default function Sidebar() {
     fetchDocuments();
   }, []);
 
-  if (!mounted) return null; // 🛡️ Prevent hydration loop/mismatch
+  if (!mounted) return null;
 
   return (
     <>
-      {/* 📱 Mobile Overlay */}
       {isMobileOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden animate-in fade-in duration-300"
@@ -88,7 +104,6 @@ export default function Sidebar() {
         }`}
         aria-expanded={!isCollapsed}
       >
-        {/* Toggle Collapse Button (Desktop) */}
         <button 
           onClick={() => setCollapsed(!isCollapsed)}
           className="absolute -right-3 top-20 bg-[var(--card)] border border-[var(--border)] rounded-full p-1 text-[var(--muted-foreground)] hover:text-[var(--primary)] shadow-sm z-40 transition-colors hidden md:block"
@@ -97,7 +112,6 @@ export default function Sidebar() {
           {isCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
         </button>
 
-        {/* Close Button (Mobile) */}
         <button 
           onClick={toggleMobile}
           className="md:hidden absolute right-4 top-4 p-2 text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
@@ -141,22 +155,6 @@ export default function Sidebar() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 hide-scrollbar flex flex-col gap-4 py-2">
-          
-          {/* Documents Section */}
-          {/* {(!isCollapsed || isMobileOpen) && documents.length > 0 && (
-            <div className="px-2">
-              <h3 className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest mb-2 px-1">Index</h3>
-              <div className="space-y-0.5">
-                {documents.map((doc, idx) => (
-                  <DocumentRow key={doc.id || `doc-${idx}`} doc={doc} onDelete={deleteDocument} />
-                ))}
-              </div>
-            </div>
-          )} */}
-
-          {/* {(!isCollapsed || isMobileOpen) && documents.length > 0 && <div className="border-t border-[var(--border)] mx-2 my-1" />} */}
-
-          {/* Conversations Section */}
           <div className={`${isCollapsed && !isMobileOpen ? 'px-1' : 'px-2'} space-y-1 mb-4`}>
             {(!isCollapsed || isMobileOpen) && conversations.length > 0 && <h3 className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest pl-1 mb-2">Discussions</h3>}
             {conversations.map((conv, idx) => (
@@ -173,7 +171,6 @@ export default function Sidebar() {
         </div>
 
         <div className="p-3 border-t border-[var(--border)] shrink-0 space-y-1">
-          {/* Theme Toggle */}
           <button
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             className={`flex items-center gap-3 w-full p-2.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] rounded-lg hover:bg-[var(--secondary)] transition-all ${
@@ -210,24 +207,6 @@ export default function Sidebar() {
     </>
   );
 }
-
-// Optimized Sub-components with Memo
-const DocumentRow = memo(({ doc, onDelete }: { doc: { id: string; title: string }, onDelete: (id: string) => void }) => (
-  <div className="group flex items-center justify-between p-1.5 rounded-md text-xs transition hover:bg-[var(--secondary)]">
-    <div className="flex items-center gap-2 overflow-hidden w-full">
-      <Link size={14} className="text-[var(--primary)] shrink-0" />
-      <span className="truncate text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] transition-colors" title={doc.title}>{doc.title}</span>
-    </div>
-    <button
-      onClick={() => onDelete(doc.id)}
-      className="opacity-0 group-hover:opacity-100 p-1 hover:text-[var(--destructive)] text-[var(--muted-foreground)] shrink-0 transition-opacity"
-      aria-label="Supprimer le document"
-    >
-      <Trash2 size={12} />
-    </button>
-  </div>
-));
-DocumentRow.displayName = 'DocumentRow';
 
 const ConversationRow = memo(({ 
   conv, isActive, isCollapsed, onSelect, onDelete 

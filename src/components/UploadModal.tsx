@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ProcessingStepper, { STEPS } from './ProcessingStepper';
+import { parseApiError, handleUknownError } from '@/lib/error-parser';
 
 export default function UploadModal({ 
   isOpen, 
@@ -66,10 +67,13 @@ export default function UploadModal({
         body: JSON.stringify({ documentId, storagePath })
       });
 
-      if (!res.ok) throw new Error('Erreur réseau');
+      if (!res.ok) {
+        const friendly = await parseApiError(res);
+        throw new Error(friendly.message);
+      }
       
       const reader = res.body?.getReader();
-      if (!reader) throw new Error('Pas de stream de réponse');
+      if (!reader) throw new Error("Impossible d'établir une connexion avec le serveur.");
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -103,14 +107,15 @@ export default function UploadModal({
                 toast.success('Document indexé et prêt pour le chat !');
                 if (onSuccess) onSuccess();
               } else if (eventType === 'error') {
-                throw new Error(payload.message);
+                throw new Error(payload.message || "Une erreur est survenue durant l'analyse.");
               }
             }
           }
         }
       }
     } catch (err: any) {
-      setError(err.message);
+      const friendly = handleUknownError(err);
+      setError(friendly.message);
     }
   };
 
@@ -133,15 +138,19 @@ export default function UploadModal({
         body: formData,
       });
 
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error || 'Erreur lors de l\'upload');
+      if (!uploadRes.ok) {
+        const friendly = await parseApiError(uploadRes);
+        throw new Error(friendly.message);
+      }
 
+      const uploadData = await uploadRes.json();
       setCurrentStepIndex(1);
       await handleProcessStream(uploadData.documentId, uploadData.storagePath);
       
     } catch (err: any) {
-      setError(err.message);
-      toast.error(err.message);
+      const friendly = handleUknownError(err);
+      setError(friendly.message);
+      toast.error(friendly.message);
     }
   };
 

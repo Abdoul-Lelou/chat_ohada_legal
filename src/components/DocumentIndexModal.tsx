@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import ConfirmModal from './ConfirmModal';
 import UploadModal from './UploadModal';
+import { parseApiError, handleUknownError } from '@/lib/error-parser';
 
 interface Document {
   id: string;
@@ -40,12 +41,15 @@ export default function DocumentIndexModal({
       const res = await fetch('/api/documents');
       if (res.ok) {
         const data = await res.json();
-        // 🛡️ Sanitize: Filter out any items without a valid ID to prevent duplicate key errors
         const validDocs = (data || []).filter((doc: Document) => doc && doc.id);
         setDocuments(validDocs);
+      } else {
+        const friendly = await parseApiError(res);
+        toast.error(friendly.message);
       }
     } catch (err) {
-      toast.error("Impossible de charger l'index");
+      const friendly = handleUknownError(err);
+      toast.error(friendly.message);
     } finally {
       setIsLoading(false);
     }
@@ -59,10 +63,12 @@ export default function DocumentIndexModal({
         setDocuments(documents.filter(d => d.id !== id));
         if (onRefreshNeeded) onRefreshNeeded();
       } else {
-        toast.error("Échec de la suppression");
+        const friendly = await parseApiError(res);
+        toast.error(friendly.message);
       }
     } catch (err) {
-      toast.error("Erreur serveur lors de la suppression");
+      const friendly = handleUknownError(err);
+      toast.error(friendly.message);
     }
   };
 
@@ -97,13 +103,6 @@ export default function DocumentIndexModal({
               </div>
               
               <div className="flex items-center gap-3">
-                {/* <button
-                  onClick={() => setIsUploadOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[var(--primary)]/20 transition-all active:scale-95"
-                >
-                  <Plus size={18} />
-                  Ajouter
-                </button> */}
                 <button 
                   onClick={onClose}
                   className="p-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] rounded-xl transition-all"
@@ -132,7 +131,6 @@ export default function DocumentIndexModal({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
-                  {/* Custom Table Header (Mobile Friendly) */}
                   <div className="hidden md:grid grid-cols-12 px-4 py-2 text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest border-b border-[var(--border)] mb-2">
                     <div className="col-span-6 flex items-center gap-2 px-1"><FileText size={12} /> Titre</div>
                     <div className="col-span-2 flex items-center gap-2 px-1"><Tag size={12} /> Catégorie</div>
@@ -140,7 +138,6 @@ export default function DocumentIndexModal({
                     <div className="col-span-2 flex items-center gap-2 px-1"><Calendar size={12} /> Date</div>
                   </div>
 
-                  {/* Document Rows */}
                   {documents.map((doc, idx) => (
                     <div 
                       key={`index-doc-${doc.id || idx}`}
@@ -205,7 +202,6 @@ export default function DocumentIndexModal({
       )}
       </AnimatePresence>
 
-      {/* Upload Portal */}
       <UploadModal 
         key="index-upload-modal"
         isOpen={isUploadOpen}
@@ -216,14 +212,13 @@ export default function DocumentIndexModal({
         }}
       />
 
-      {/* Delete Confirmation */}
       <ConfirmModal 
         key="index-delete-confirm"
         isOpen={!!deleteConfirmId}
         onClose={() => setDeleteConfirmId(null)}
         onConfirm={() => deleteConfirmId && handleDelete(deleteConfirmId)}
         title="Supprimer le document ?"
-        message="Cette action est irréversible. Tous les vecteurs et paragraphes associés seront définitivement supprimés et l'IA ne pourra plus y accéder."
+        message="Cette action est irréversible. Tous les vecteurs et paragraphes associés seront définitivement supprimés."
         confirmText="Supprimer"
       />
     </>
