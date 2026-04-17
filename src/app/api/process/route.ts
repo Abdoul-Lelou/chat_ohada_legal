@@ -153,13 +153,22 @@ export async function POST(req: NextRequest) {
           if (documentId) await adminSupabase.from('documents').update({ status: 'error' }).eq('id', documentId);
         } catch (_) {}
 
-        // Professional message transform
+        // Professional message transform (Rule #2 & #3)
         let professionalMessage = "Une erreur technique est survenue durant l'indexation.";
-        if (error.message === 'ERR_UNAUTHORIZED') professionalMessage = "Session expirée.";
-        if (error.message === 'ERR_RAG_NO_DATA') professionalMessage = "Le document est introuvable.";
-        if (error.message.includes('texte exploitable')) professionalMessage = error.message;
+        let errCode = 'ERR_API_GENERIC';
 
-        send('error', { message: professionalMessage, code: 'ERR_PROCESS_FAILED' });
+        if (error.message.includes('UNAUTHORIZED')) {
+          professionalMessage = "Votre session a expiré.";
+          errCode = 'ERR_UNAUTHORIZED';
+        } else if (error.message.includes('NO_DATA')) {
+          professionalMessage = "Le document est introuvable.";
+          errCode = 'ERR_RAG_NO_DATA';
+        } else if (error.message.includes('texte exploitable')) {
+          professionalMessage = "Aucun texte exploitable n'a été trouvé dans le document.";
+          errCode = 'ERR_EMPTY_RESPONSE';
+        }
+
+        send('error', { message: professionalMessage, code: errCode });
         controller.close();
       }
     },
