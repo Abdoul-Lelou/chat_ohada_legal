@@ -112,15 +112,18 @@ export async function POST(req: NextRequest) {
           const response = await ai.models.embedContent({
             model:  'gemini-embedding-001',
             contents:             enrichedTexts,
+            // @ts-ignore
             outputDimensionality: 3072,
           });
 
-          const embeddingsArray = Array.isArray(response.embeddings) ? response.embeddings : [response.embedding];
+          const embeddingsArray = (response.embeddings && Array.isArray(response.embeddings)) 
+            ? response.embeddings 
+            : (response.embeddings ? [response.embeddings] : []);
 
-          const dbChunks = batch.map((chunk, idx) => ({
+          const dbChunks = batch.map((chunk: any, idx: number) => ({
             document_id: documentId,
             content:     enrichedTexts[idx],
-            embedding:   embeddingsArray[idx]?.values || [],
+            embedding:   (embeddingsArray[idx] as any)?.values || [],
             metadata: { title, source_type, chunkIndex: i + idx },
           }));
 

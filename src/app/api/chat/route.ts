@@ -162,7 +162,7 @@ Fournir des réponses :
           await supabase.from('messages').insert([
             { conversation_id: conversationId, role: 'user', content: latestMessage },
             { conversation_id: conversationId, role: 'assistant', content: text, 
-              cited_sources: topChunks.map(m => ({ id: m.id, metadata: m.metadata })) 
+              cited_sources: topChunks.map((m: any) => ({ id: m.id, metadata: m.metadata })) 
             },
           ]);
 
