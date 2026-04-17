@@ -36,9 +36,14 @@ export async function POST(req: Request) {
       outputDimensionality: 3072,
     });
 
-    const queryEmbedding = Array.isArray(embedResponse.embeddings)
-      ? embedResponse.embeddings[0]?.values ?? []
-      : embedResponse.embedding?.values ?? [];
+    // const queryEmbedding = Array.isArray(embedResponse.embeddings)
+    //   ? embedResponse.embeddings[0]?.values ?? []
+    //   : embedResponse.embedding?.values ?? [];
+    const queryEmbedding = embedResponse.embeddings 
+  ? (Array.isArray(embedResponse.embeddings) 
+      ? embedResponse.embeddings[0]?.values 
+      : (embedResponse.embeddings as any).values) 
+  : [];
 
     // =========================================================================
     // STEP 2 — RAG Match Logic with Fallback
