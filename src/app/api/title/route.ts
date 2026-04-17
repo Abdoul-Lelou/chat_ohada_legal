@@ -12,20 +12,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ title: 'Nouvelle discussion' });
     }
 
-    // Use the @google/genai SDK structure
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    
     const prompt = `Génère un titre très court (max 5 mots) et professionnel en français pour une discussion juridique commençant par ce message : "${firstMessage}". 
     Réponds UNIQUEMENT avec le titre, sans ponctuation inutile à la fin.`;
 
-    const result = await model.generateContent(prompt);
+    // Correct usage for @google/genai SDK (Unified SDK)
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+    });
     
-    // Safety check on response
-    if (!result.response || !result.response.text) {
+    // Safely extract text
+    let titleText = '';
+    try {
+      titleText = result.text().trim();
+    } catch (e) {
+      // Fallback if text() method fails
+      titleText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    }
+
+    if (!titleText) {
         return NextResponse.json({ title: 'Nouvelle discussion' });
     }
 
-    const title = result.response.text().trim().replace(/^"|"$/g, '');
+    const title = titleText.replace(/^"|"$/g, '');
 
     return NextResponse.json({ title });
   } catch (error: any) {
