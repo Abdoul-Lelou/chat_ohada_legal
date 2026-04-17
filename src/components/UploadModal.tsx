@@ -88,7 +88,7 @@ export default function UploadModal({
 
         for (const line of lines) {
           if (line.startsWith('event: ')) {
-            const eventNameRegex = /^event: (.+)\ndata: (.*)$/s;
+            const eventNameRegex = /^event: (.+)\ndata: (.*)$/;
             const match = eventNameRegex.exec(line);
             
             if (match) {
