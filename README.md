@@ -1,38 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OHADA Legal AI — Assistant Juridique Intelligent
 
-## Getting Started
+> SaaS d'assistance juridique IA pour le droit OHADA et guinéen.  
+> RAG pipeline sur textes officiels · Chat conversationnel · Multi-modèle IA.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack Technique
+
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | Next.js 16 (App Router, Turbopack) |
+| **Language** | TypeScript (strict) |
+| **Styling** | Tailwind CSS v4 |
+| **Auth & DB** | Supabase (Auth, PostgreSQL, pgvector, Storage) |
+| **IA Primaire** | Claude (Anthropic) via AI SDK |
+| **IA Secondaire** | Gemini (Google) |
+| **State** | Zustand + Immer + Persist |
+| **UI** | Framer Motion, Lucide Icons, Sonner |
+| **RAG** | pdf-parse → embeddings → pgvector → semantic search |
+
+---
+
+## Architecture
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/                # Route Handlers (REST)
+│   │   ├── chat/           # POST — Streaming AI chat
+│   │   ├── documents/      # CRUD — Document management
+│   │   ├── messages/       # GET — Message history
+│   │   ├── process/        # POST — PDF ingestion pipeline
+│   │   ├── title/          # POST — Auto-generate title
+│   │   └── upload/         # POST — File upload to Supabase Storage
+│   ├── login/              # Auth page
+│   ├── globals.css         # Design system (CSS variables)
+│   ├── layout.tsx          # Root layout (fonts, theme, SEO)
+│   └── page.tsx            # Main chat page
+├── components/             # React components
+│   ├── ChatZone.tsx        # Message list + empty state
+│   ├── ChatInput.tsx       # Input area
+│   ├── Sidebar.tsx         # Navigation + history
+│   ├── ConfirmModal.tsx    # Reusable modal
+│   ├── UploadModal.tsx     # Document upload UI
+│   ├── DocumentIndexModal.tsx  # Document index viewer
+│   └── ProcessingStepper.tsx   # Upload progress
+├── context/
+│   └── ThemeContext.tsx     # Dark/Light theme provider
+├── lib/
+│   ├── supabase/           # Supabase client (browser + server)
+│   ├── chat-utils.ts       # ID generation, title generation
+│   ├── error-parser.ts     # Standardized error handling
+│   ├── storage-adapter.ts  # Supabase Storage adapter
+│   └── utils/              # Shared utilities
+├── services/
+│   └── chatService.ts      # AI chat orchestration (streaming)
+├── store/
+│   └── useChatStore.ts     # Zustand global state
+└── middleware.ts            # Auth middleware
+
+supabase/
+└── schema.sql               # Database schema (tables, RLS, indexes)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Démarrage Rapide
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# 1. Installer les dépendances
+npm install
 
-## Learn More
+# 2. Configurer les variables d'environnement
+cp .env.example .env.local
+# → Renseigner : SUPABASE_URL, SUPABASE_ANON_KEY, ANTHROPIC_API_KEY, etc.
 
-To learn more about Next.js, take a look at the following resources:
+# 3. Appliquer le schéma Supabase
+# → Exécuter supabase/schema.sql dans le SQL Editor Supabase
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 4. Lancer le serveur de développement
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Configuration IA
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Voir les fichiers de configuration dédiés :
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# chat_ohada_legal
-# chat_ohada_legal
+| Fichier | Rôle |
+|---------|------|
+| `AGENTS.md` | Règles universelles pour **toute IA** travaillant sur ce projet |
+| `CLAUDE.md` | Directives spécifiques à **Claude Code** (agent principal) |
+| `GEMINI.md` | Directives spécifiques à **Gemini** (agent secondaire) |
+| `docs/` | Documentation technique approfondie |
+
+---
+
+## Conventions
+
+- **Langue du code** : Anglais (variables, fonctions, composants)
+- **Langue de l'UI** : Français
+- **Commits** : Conventional Commits (`feat:`, `fix:`, `refactor:`)
+- **Branches** : `main` (production), `dev` (développement)
+
+---
+
+## Licence
+
+Propriétaire — Tous droits réservés.

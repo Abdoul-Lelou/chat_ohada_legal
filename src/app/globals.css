@@ -1,66 +1,153 @@
 @import "tailwindcss";
 
+/* ============================================================
+   OHADA LEGAL CHAT — PREMIUM DESIGN SYSTEM
+   Inspired by: ChatGPT · Claude · Linear · Notion · Vercel
+   ============================================================ */
+
 @layer base {
   :root {
-    --background: #030712; /* gray-950 */
-    --foreground: #f9fafb; /* gray-50 */
-    --card: #111827; /* gray-900 */
-    --card-foreground: #f3f4f6; /* gray-100 */
-    --popover: #111827;
-    --popover-foreground: #f9fafb;
-    --primary: #10b981; /* emerald-500 */
+    /* ── Core Palette (Dark — Default) ── */
+    --background: #0a0f1e;
+    --background-secondary: #0e1429;
+    --foreground: #e8eaed;
+    --foreground-muted: #8b92a5;
+
+    /* ── Surface / Cards ── */
+    --card: #111827;
+    --card-hover: #1a2236;
+    --card-foreground: #e2e5ea;
+
+    /* ── Borders ── */
+    --border: #1e2a3a;
+    --border-subtle: #162032;
+
+    /* ── Primary Accent ── */
+    --primary: #10b981;
+    --primary-hover: #34d399;
+    --primary-muted: rgba(16, 185, 129, 0.12);
     --primary-foreground: #ffffff;
-    --secondary: #1f2937; /* gray-800 */
-    --secondary-foreground: #f9fafb;
-    --muted: #374151; /* gray-700 */
-    --muted-foreground: #9ca3af; /* gray-400 */
-    --accent: #111827;
-    --accent-foreground: #f9fafb;
+
+    /* ── Secondary ── */
+    --secondary: #1a2236;
+    --secondary-foreground: #e2e5ea;
+
+    /* ── Muted ── */
+    --muted: #1a2236;
+    --muted-foreground: #6b7694;
+
+    /* ── Destructive ── */
     --destructive: #ef4444;
-    --destructive-foreground: #f9fafb;
-    --border: #1f2937; /* gray-800 */
-    --input: #1f2937;
+    --destructive-muted: rgba(239, 68, 68, 0.12);
+
+    /* ── Input / Ring ── */
+    --input: #1e2a3a;
     --ring: #10b981;
-    --radius: 1rem; /* Pronounced rounding as requested */
-    
-    /* 🏛️ Semantic SaaS Tokens */
-    --status-info: #22d3ee;    /* Cyan - Articles */
-    --status-warning: #f59e0b; /* Amber/Gold - Titles */
-    --status-error: #f87171;   /* Soft Red - Prohibitions */
-    --status-assistant: #059669; /* Emerald - Assistant Bg */
-    --status-user: #1f2937;      /* Dark Gray - User Bg */
-    
-    --sidebar-width: 16rem;
+
+    /* ── Radius ── */
+    --radius: 0.75rem;
+
+    /* ── Semantic: Message Bubbles ── */
+    --user-bubble-bg: #1a2236;
+    --user-bubble-fg: #e2e5ea;
+    --user-bubble-border: #253049;
+
+    --assistant-bubble-bg: transparent;
+    --assistant-bubble-fg: #e2e5ea;
+    --assistant-bubble-border: transparent;
+
+    /* ── Semantic: Legal Accents ── */
+    --accent-article: #38bdf8;
+    --accent-article-bg: rgba(56, 189, 248, 0.08);
+    --accent-title: #fbbf24;
+    --accent-title-bg: rgba(251, 191, 36, 0.06);
+    --accent-quote-border: #10b981;
+    --accent-quote-bg: rgba(16, 185, 129, 0.06);
+
+    /* ── Semantic: Sources ── */
+    --source-bg: rgba(16, 185, 129, 0.08);
+    --source-border: rgba(16, 185, 129, 0.2);
+    --source-text: #34d399;
+    --source-dot: #10b981;
+
+    /* ── Layout ── */
+    --sidebar-width: 17rem;
     --sidebar-collapsed: 4.5rem;
+    --chat-max-width: 900px;
     --transition-speed: 200ms;
+
+    /* ── Copy button ── */
+    --copy-fg: #6b7694;
+    --copy-hover-fg: #e2e5ea;
+    --copy-bg: rgba(255, 255, 255, 0.04);
+    --copy-hover-bg: rgba(255, 255, 255, 0.08);
   }
 
+  /* ── Light Theme ── */
   [data-theme='light'] {
-    --background: #f8fafc; /* slate-50 */
-    --foreground: #0f172a; /* slate-900 */
+    --background: #f7f8fa;
+    --background-secondary: #ffffff;
+    --foreground: #111827;
+    --foreground-muted: #6b7280;
+
     --card: #ffffff;
-    --card-foreground: #1e293b; /* slate-800 */
-    --popover: #ffffff;
-    --popover-foreground: #0f172a;
-    --primary: #059669; /* emerald-600 */
+    --card-hover: #f3f4f6;
+    --card-foreground: #1f2937;
+
+    --border: #e5e7eb;
+    --border-subtle: #f0f1f3;
+
+    --primary: #059669;
+    --primary-hover: #047857;
+    --primary-muted: rgba(5, 150, 105, 0.08);
     --primary-foreground: #ffffff;
-    --secondary: #f1f5f9; /* slate-100 */
-    --secondary-foreground: #1e293b;
-    --muted: #f1f5f9;
-    --muted-foreground: #64748b; /* slate-500 */
-    --accent: #f1f5f9;
-    --accent-foreground: #0f172a;
-    --border: #e2e8f0; /* slate-200 */
-    --input: #e2e8f0;
+
+    --secondary: #f3f4f6;
+    --secondary-foreground: #374151;
+
+    --muted: #f3f4f6;
+    --muted-foreground: #6b7280;
+
+    --destructive: #dc2626;
+    --destructive-muted: rgba(220, 38, 38, 0.08);
+
+    --input: #e5e7eb;
     --ring: #059669;
-    
-    /* 🏛️ Light Mode Semantics (High Contrast) */
-    --status-info: #0891b2;    /* Darker Cyan */
-    --status-warning: #d97706; /* Darker Gold */
-    --status-assistant: #ecfdf5; /* Very Light Emerald */
-    --status-user: #f1f5f9;      /* Light Gray/Slate */
+
+    /* ── Message Bubbles (Light) ── */
+    --user-bubble-bg: #059669;
+    --user-bubble-fg: #ffffff;
+    --user-bubble-border: #047857;
+
+    --assistant-bubble-bg: transparent;
+    --assistant-bubble-fg: #1f2937;
+    --assistant-bubble-border: transparent;
+
+    /* ── Legal Accents (Light) ── */
+    --accent-article: #0284c7;
+    --accent-article-bg: rgba(2, 132, 199, 0.06);
+    --accent-title: #b45309;
+    --accent-title-bg: rgba(180, 83, 9, 0.04);
+    --accent-quote-border: #059669;
+    --accent-quote-bg: rgba(5, 150, 105, 0.04);
+
+    /* ── Sources (Light) ── */
+    --source-bg: rgba(5, 150, 105, 0.06);
+    --source-border: rgba(5, 150, 105, 0.15);
+    --source-text: #047857;
+    --source-dot: #059669;
+
+    /* ── Copy button (Light) ── */
+    --copy-fg: #9ca3af;
+    --copy-hover-fg: #374151;
+    --copy-bg: rgba(0, 0, 0, 0.03);
+    --copy-hover-bg: rgba(0, 0, 0, 0.06);
   }
 }
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
 
 @layer utilities {
   .hide-scrollbar {
@@ -71,70 +158,245 @@
     display: none;
   }
 
-  /* Optimized Legal Reading Class */
+  /* ── Premium Markdown / Legal Prose ── */
   .prose-legal {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--card-foreground);
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    color: var(--assistant-bubble-fg);
     width: 100%;
+    word-break: break-word;
   }
-  
-  .prose-legal h1, .prose-legal h2, .prose-legal h3 {
-    color: var(--status-warning);
+
+  .prose-legal > *:first-child {
+    margin-top: 0 !important;
+  }
+
+  .prose-legal > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .prose-legal h1 {
+    font-size: 1.25rem;
     font-weight: 700;
+    color: var(--foreground);
+    margin-top: 1.75em;
+    margin-bottom: 0.75em;
+    letter-spacing: -0.025em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prose-legal h2 {
+    font-size: 1.1rem;
+    font-weight: 650;
+    color: var(--foreground);
     margin-top: 1.5em;
     margin-bottom: 0.5em;
     letter-spacing: -0.02em;
   }
-  
+
+  .prose-legal h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-top: 1.25em;
+    margin-bottom: 0.4em;
+  }
+
+  .prose-legal p {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+  }
+
   .prose-legal strong {
-    color: #ffffff;
-    font-weight: 700;
+    color: var(--foreground);
+    font-weight: 650;
   }
 
-  [data-theme='light'] .prose-legal strong {
-    color: #000000;
+  .prose-legal em {
+    color: var(--foreground-muted);
   }
 
-  /* ⚖️ Legal Table Styling */
+  .prose-legal ul, .prose-legal ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.75em;
+    padding-left: 1.5em;
+  }
+
+  .prose-legal li {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+  }
+
+  .prose-legal li::marker {
+    color: var(--primary);
+  }
+
+  .prose-legal code {
+    font-size: 0.85em;
+    padding: 0.15em 0.4em;
+    border-radius: 0.3rem;
+    background: var(--muted);
+    color: var(--foreground);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+
+  .prose-legal pre {
+    margin: 1em 0;
+    padding: 1rem;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .prose-legal pre code {
+    padding: 0;
+    background: transparent;
+  }
+
+  .prose-legal a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .prose-legal hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5em 0;
+  }
+
+  /* ── Legal Table ── */
   .legal-table-container {
     width: 100%;
     overflow-x: auto;
-    margin: 1.5em 0;
-    border-radius: 0.5rem;
+    margin: 1.25em 0;
+    border-radius: var(--radius);
     border: 1px solid var(--border);
   }
-  
+
   .legal-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 0.85rem;
   }
-  
+
   .legal-table th {
-    background: var(--secondary);
-    padding: 0.75rem;
+    background: var(--muted);
+    color: var(--foreground);
+    padding: 0.625rem 0.875rem;
     text-align: left;
     font-weight: 600;
-    border-bottom: 1px solid var(--border);
-  }
-  
-  .legal-table td {
-    padding: 0.75rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
     border-bottom: 1px solid var(--border);
   }
 
-  /* Bubble Base Transitions */
-  .bubble-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  .legal-table td {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--card-foreground);
+  }
+
+  .legal-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .legal-table tr:hover td {
+    background: var(--primary-muted);
+  }
+
+  /* ── Blockquote (Legal Citations) ── */
+  .prose-legal blockquote {
+    border-left: 3px solid var(--accent-quote-border);
+    background: var(--accent-quote-bg);
+    padding: 0.875rem 1rem;
+    margin: 1em 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    color: var(--foreground);
+    font-style: italic;
+  }
+
+  .prose-legal blockquote p {
+    margin: 0.25em 0;
   }
 }
 
+/* ============================================================
+   GLOBAL STYLES
+   ============================================================ */
+
 * {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--transition-speed) ease,
+              border-color var(--transition-speed) ease,
+              color var(--transition-speed) ease,
+              box-shadow var(--transition-speed) ease;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+::selection {
+  background-color: rgba(16, 185, 129, 0.3);
+  color: inherit;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-typing-dot {
+  animation: typing-dot 1.4s infinite ease-in-out;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s infinite;
 }

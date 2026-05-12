@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, memo } from 'react';
-import { 
-  Plus, MessageSquare, Trash2, LogOut, BookOpen, 
-  Link, Sun, Moon, PanelLeftClose, PanelLeftOpen, X, Database
+import {
+  Plus, MessageSquare, Trash2, LogOut, BookOpen,
+  Sun, Moon, PanelLeftClose, PanelLeftOpen, X, Database, Scale,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -25,12 +25,12 @@ export default function Sidebar() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isIndexModalOpen, setIsIndexModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
   const conversations = useChatStore((state) => state.conversations);
   const activeId = useChatStore((state) => state.activeId);
   const isCollapsed = useChatStore((state) => state.isSidebarCollapsed);
   const isMobileOpen = useChatStore((state) => state.isMobileSidebarOpen);
-  
+
   const selectConversation = useChatStore((state) => state.selectConversation);
   const createConversation = useChatStore((state) => state.createConversation);
   const deleteConversation = useChatStore((state) => state.deleteConversation);
@@ -87,16 +87,19 @@ export default function Sidebar() {
 
   if (!mounted) return null;
 
+  const showLabels = !isCollapsed || isMobileOpen;
+
   return (
     <>
+      {/* Mobile overlay */}
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden animate-in fade-in duration-300"
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden"
           onClick={toggleMobile}
         />
       )}
 
-      <aside 
+      <aside
         className={`bg-[var(--card)] text-[var(--foreground)] h-screen flex flex-col fixed inset-y-0 left-0 z-[70] md:relative md:flex border-r border-[var(--border)] transition-all duration-[var(--transition-speed)] ease-in-out ${
           isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         } ${
@@ -104,63 +107,81 @@ export default function Sidebar() {
         }`}
         aria-expanded={!isCollapsed}
       >
-        <button 
+        {/* ── Collapse Toggle (Desktop) ── */}
+        <button
           onClick={() => setCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-20 bg-[var(--card)] border border-[var(--border)] rounded-full p-1 text-[var(--muted-foreground)] hover:text-[var(--primary)] shadow-sm z-40 transition-colors hidden md:block"
-          title={isCollapsed ? "Développer le menu" : "Réduire le menu"}
+          className="absolute -right-3 top-20 bg-[var(--card)] border border-[var(--border)] rounded-full p-1.5 text-[var(--muted-foreground)] hover:text-[var(--primary)] shadow-sm z-40 transition-colors hidden md:flex items-center justify-center"
+          title={isCollapsed ? 'Développer le menu' : 'Réduire le menu'}
         >
-          {isCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+          {isCollapsed ? <PanelLeftOpen size={13} /> : <PanelLeftClose size={13} />}
         </button>
 
-        <button 
+        {/* ── Mobile Close ── */}
+        <button
           onClick={toggleMobile}
-          className="md:hidden absolute right-4 top-4 p-2 text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
+          className="md:hidden absolute right-3 top-3 p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
 
-        <div className="p-3 space-y-2 shrink-0 mt-12 md:mt-0">
+        {/* ── Header / Brand ── */}
+        <div className={`p-4 shrink-0 mt-10 md:mt-0 ${isCollapsed && !isMobileOpen ? 'px-2' : ''}`}>
+          {/* Brand */}
+          <div className={`flex items-center gap-2.5 mb-5 ${isCollapsed && !isMobileOpen ? 'justify-center' : 'px-1'}`}>
+            <div className="w-8 h-8 rounded-lg bg-[var(--primary-muted)] flex items-center justify-center shrink-0 border border-[var(--primary)]/20">
+              <Scale size={16} className="text-[var(--primary)]" />
+            </div>
+            {showLabels && (
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-[var(--foreground)] tracking-tight leading-none">OHADA</span>
+                <span className="text-[10px] text-[var(--muted-foreground)] font-medium tracking-wide">Legal AI</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── New Chat Button ── */}
           <button
             onClick={() => {
               createConversation();
-              toast.success("Nouvelle discussion prête");
+              toast.success('Nouvelle discussion prête');
             }}
-            className={`w-full flex items-center gap-2 p-2.5 text-sm font-medium border border-[var(--border)] bg-[var(--background)] rounded-lg hover:bg-[var(--secondary)] transition-all ${
-              isCollapsed ? 'md:justify-center' : 'justify-start md:justify-start'
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium rounded-xl bg-[var(--primary)] text-white hover:brightness-110 active:scale-[0.98] transition-all shadow-sm ${
+              isCollapsed && !isMobileOpen ? 'justify-center px-0' : ''
             }`}
           >
-            <Plus size={18} className="text-[var(--primary)] shrink-0" />
-            {(!isCollapsed || isMobileOpen) && <span className="truncate">Nouveau Chat</span>}
-          </button>
-          
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className={`w-full flex items-center gap-2 p-2.5 text-sm font-medium bg-[var(--primary)]/10 text-[var(--primary)] rounded-lg hover:bg-[var(--primary)]/20 border border-[var(--primary)]/20 transition-all ${
-              isCollapsed ? 'md:justify-center' : 'justify-start md:justify-start'
-            }`}
-          >
-            <BookOpen size={18} className="shrink-0" />
-            {(!isCollapsed || isMobileOpen) && <span className="truncate">Document RAG</span>}
-          </button>
-
-          <button
-            onClick={() => setIsIndexModalOpen(true)}
-            className={`w-full flex items-center gap-2 p-2.5 text-sm font-medium border border-[var(--border)] bg-[var(--background)] rounded-lg hover:bg-[var(--secondary)] transition-all ${
-              isCollapsed ? 'md:justify-center' : 'justify-start md:justify-start'
-            }`}
-          >
-            <Database size={18} className="text-[var(--primary)] shrink-0" />
-            {(!isCollapsed || isMobileOpen) && <span className="truncate">Index des documents</span>}
+            <Plus size={16} className="shrink-0" />
+            {showLabels && <span>Nouveau Chat</span>}
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 hide-scrollbar flex flex-col gap-4 py-2">
-          <div className={`${isCollapsed && !isMobileOpen ? 'px-1' : 'px-2'} space-y-1 mb-4`}>
-            {(!isCollapsed || isMobileOpen) && conversations.length > 0 && <h3 className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest pl-1 mb-2">Discussions</h3>}
+        {/* ── Document Actions ── */}
+        <div className={`px-4 pb-3 space-y-1 shrink-0 ${isCollapsed && !isMobileOpen ? 'px-2' : ''}`}>
+          <SidebarButton
+            icon={<BookOpen size={16} />}
+            label="Document RAG"
+            showLabel={showLabels}
+            onClick={() => setIsUploadModalOpen(true)}
+          />
+          <SidebarButton
+            icon={<Database size={16} />}
+            label="Index documents"
+            showLabel={showLabels}
+            onClick={() => setIsIndexModalOpen(true)}
+          />
+        </div>
+
+        {/* ── Conversations List ── */}
+        <div className="flex-1 overflow-y-auto hide-scrollbar px-2 py-1">
+          {showLabels && conversations.length > 0 && (
+            <h3 className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-[0.12em] px-3 mb-2 mt-1">
+              Discussions
+            </h3>
+          )}
+          <div className="space-y-0.5">
             {conversations.map((conv, idx) => (
-              <ConversationRow 
-                key={`sidebar-conv-${conv.id || idx}`} 
-                conv={conv} 
+              <ConversationRow
+                key={`sidebar-conv-${conv.id || idx}`}
+                conv={conv}
                 isActive={activeId === conv.id}
                 isCollapsed={isCollapsed && !isMobileOpen}
                 onSelect={selectConversation}
@@ -170,36 +191,31 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <div className="p-3 border-t border-[var(--border)] shrink-0 space-y-1">
-          <button
+        {/* ── Footer ── */}
+        <div className={`p-3 border-t border-[var(--border)] shrink-0 space-y-0.5 ${isCollapsed && !isMobileOpen ? 'px-2' : ''}`}>
+          <SidebarButton
+            icon={resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            label={`Mode ${resolvedTheme === 'dark' ? 'Clair' : 'Sombre'}`}
+            showLabel={showLabels}
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-            className={`flex items-center gap-3 w-full p-2.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] rounded-lg hover:bg-[var(--secondary)] transition-all ${
-              isCollapsed && !isMobileOpen ? 'md:justify-center' : 'justify-start md:justify-start'
-            }`}
-          >
-            {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            {(!isCollapsed || isMobileOpen) && <span className="truncate">Mode {resolvedTheme === 'dark' ? 'Clair' : 'Sombre'}</span>}
-          </button>
-
-          <button
+          />
+          <SidebarButton
+            icon={<LogOut size={16} />}
+            label="Déconnexion"
+            showLabel={showLabels}
             onClick={handleLogout}
-            className={`flex items-center gap-3 w-full p-2.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--destructive)] rounded-lg hover:bg-[var(--secondary)] transition-all ${
-              isCollapsed && !isMobileOpen ? 'md:justify-center' : 'justify-start md:justify-start'
-            }`}
-          >
-            <LogOut size={18} />
-            {(!isCollapsed || isMobileOpen) && <span className="truncate">Déconnexion</span>}
-          </button>
+            variant="danger"
+          />
         </div>
       </aside>
 
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-        onSuccess={() => fetchDocuments()} 
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={() => fetchDocuments()}
       />
 
-      <DocumentIndexModal 
+      <DocumentIndexModal
         isOpen={isIndexModalOpen}
         onClose={() => setIsIndexModalOpen(false)}
         onRefreshNeeded={() => fetchDocuments()}
@@ -208,14 +224,53 @@ export default function Sidebar() {
   );
 }
 
-const ConversationRow = memo(({ 
-  conv, isActive, isCollapsed, onSelect, onDelete 
-}: { 
-  conv: { id: string; title: string }, 
-  isActive: boolean, 
-  isCollapsed: boolean,
-  onSelect: (id: string) => void,
-  onDelete: (id: string) => void
+/* ============================================================
+   SIDEBAR BUTTON — Reusable
+   ============================================================ */
+
+function SidebarButton({
+  icon,
+  label,
+  showLabel,
+  onClick,
+  variant = 'default',
+}: {
+  icon: React.ReactNode;
+  label: string;
+  showLabel: boolean;
+  onClick: () => void;
+  variant?: 'default' | 'danger';
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-all ${
+        !showLabel ? 'justify-center px-0' : ''
+      } ${
+        variant === 'danger'
+          ? 'text-[var(--muted-foreground)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)]'
+          : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]'
+      }`}
+      title={!showLabel ? label : undefined}
+    >
+      <span className="shrink-0">{icon}</span>
+      {showLabel && <span className="truncate">{label}</span>}
+    </button>
+  );
+}
+
+/* ============================================================
+   CONVERSATION ROW — Memoized
+   ============================================================ */
+
+const ConversationRow = memo(({
+  conv, isActive, isCollapsed, onSelect, onDelete,
+}: {
+  conv: { id: string; title: string };
+  isActive: boolean;
+  isCollapsed: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
 }) => (
   <div
     onClick={() => onSelect(conv.id)}
@@ -228,18 +283,18 @@ const ConversationRow = memo(({
     tabIndex={0}
     role="button"
     aria-pressed={isActive}
-    className={`group flex items-center justify-between cursor-pointer rounded-lg text-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-      isCollapsed ? 'p-2.5 justify-center' : 'p-2.5 gap-3'
+    className={`group flex items-center justify-between cursor-pointer rounded-lg text-sm transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+      isCollapsed ? 'p-2 justify-center' : 'px-3 py-2 gap-2'
     } ${
-      isActive 
-        ? 'bg-[var(--primary)]/10 text-[var(--primary)] ring-1 ring-[var(--primary)]/30' 
-        : 'hover:bg-[var(--secondary)] text-[var(--muted-foreground)]'
+      isActive
+        ? 'bg-[var(--primary-muted)] text-[var(--primary)] font-medium'
+        : 'text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]'
     }`}
     title={isCollapsed ? conv.title : undefined}
   >
-    <div className="flex items-center gap-3 overflow-hidden">
-      <MessageSquare size={18} className={isActive ? 'text-[var(--primary)]' : ''} />
-      {!isCollapsed && <span className="truncate font-medium">{conv.title}</span>}
+    <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
+      <MessageSquare size={15} className="shrink-0" />
+      {!isCollapsed && <span className="truncate text-[13px]">{conv.title}</span>}
     </div>
     {!isCollapsed && (
       <button
@@ -247,10 +302,10 @@ const ConversationRow = memo(({
           e.stopPropagation();
           onDelete(conv.id);
         }}
-        className="opacity-0 group-hover:opacity-100 p-1 hover:text-[var(--destructive)] transition-opacity focus:opacity-100 outline-none focus-visible:ring-1 focus-visible:ring-red-500 rounded"
-        aria-label={`Supprimer la conversation: ${conv.title}`}
+        className="opacity-0 group-hover:opacity-100 p-1 hover:text-[var(--destructive)] transition-all rounded focus:opacity-100 outline-none focus-visible:ring-1 focus-visible:ring-red-500 shrink-0"
+        aria-label={`Supprimer: ${conv.title}`}
       >
-        <Trash2 size={14} />
+        <Trash2 size={13} />
       </button>
     )}
   </div>
