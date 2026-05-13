@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'OHADA AI — Assistant Juridique Intelligent',
+  title: 'SOVEREIGN LEGAL INTELLIGENCE-SLI',
   description: 'Assistant juridique IA expert en droit OHADA et guinéen. Analyse de textes officiels, articles de loi et jurisprudence.',
   keywords: ['OHADA', 'droit', 'juridique', 'IA', 'Guinée', 'assistant', 'legal'],
 };

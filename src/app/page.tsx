@@ -103,7 +103,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2">
             <Scale size={16} className="text-[var(--primary)]" />
-            <span className="text-sm font-bold text-[var(--foreground)] tracking-tight">OHADA Legal</span>
+            <span className="text-sm font-bold text-[var(--foreground)] tracking-tight">SLI</span>
           </div>
 
           <div className="w-9" /> {/* Spacer for centering */}

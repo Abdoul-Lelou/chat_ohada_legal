@@ -1,4 +1,4 @@
-# OHADA Legal AI — Assistant Juridique Intelligent
+# SOVEREIGN LEGAL INTELLIGENCE-SLI — Assistant Juridique Intelligent
 
 > SaaS d'assistance juridique IA pour le droit OHADA et guinéen.  
 > RAG pipeline sur textes officiels · Chat conversationnel · Multi-modèle IA.

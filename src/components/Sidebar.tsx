@@ -133,8 +133,8 @@ export default function Sidebar() {
             </div>
             {showLabels && (
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-[var(--foreground)] tracking-tight leading-none">OHADA</span>
-                <span className="text-[10px] text-[var(--muted-foreground)] font-medium tracking-wide">Legal AI</span>
+                <span className="text-[11px] font-bold text-[var(--foreground)] tracking-tight leading-none">SOVEREIGN</span>
+                <span className="text-[10px] text-[var(--muted-foreground)] font-medium tracking-wide">LEGAL INTELLIGENCE-SLI</span>
               </div>
             )}
           </div>

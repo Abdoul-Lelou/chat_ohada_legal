@@ -1,4 +1,4 @@
-# Gemini Intelligence Directives — OHADA Legal AI
+# Gemini Intelligence Directives — SOVEREIGN LEGAL INTELLIGENCE-SLI
 
 > Ce document définit les attentes spécifiques pour **Gemini**, l'agent expert en brainstorming, rapidité d'exécution et exploration d'alternatives.
 

@@ -1,4 +1,4 @@
-# Guide des Prompts — OHADA Legal AI
+# Guide des Prompts — SOVEREIGN LEGAL INTELLIGENCE-SLI
 
 > Ce document archive les patterns de prompts efficaces pour interagir avec les IA du projet et maintenir une cohérence de ton et de résultat.
 

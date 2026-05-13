@@ -1,4 +1,4 @@
-# Architecture Technique — OHADA Legal AI
+# Architecture Technique — SOVEREIGN LEGAL INTELLIGENCE-SLI
 
 ## 🏗️ Vue d'ensemble
 Le projet est une application web moderne (SaaS) construite sur **Next.js** et **Supabase**, conçue pour fournir une interface conversationnelle fluide avec une intelligence juridique.

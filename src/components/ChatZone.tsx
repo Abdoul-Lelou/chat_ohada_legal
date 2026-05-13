@@ -33,7 +33,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick?: (text: string) 
         </div>
 
         <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2 tracking-tight">
-          Expert Juridique OHADA
+          SOVEREIGN LEGAL INTELLIGENCE
         </h2>
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed mb-10 max-w-sm">
           Posez vos questions sur le droit OHADA ou le droit guinéen. Je réponds à partir des textes officiels indexés dans la base.

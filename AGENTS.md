@@ -1,4 +1,4 @@
-# Global Agent Rules — OHADA Legal AI
+# Global Agent Rules — SOVEREIGN LEGAL INTELLIGENCE-SLI
 
 > Ce document contient les règles universelles et immuables que **chaque agent IA** doit respecter lors d'une intervention sur ce codebase.
 

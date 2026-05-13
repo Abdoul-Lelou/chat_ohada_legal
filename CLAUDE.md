@@ -1,4 +1,4 @@
-# Claude Intelligence Directives — OHADA Legal AI
+# Claude Intelligence Directives — SOVEREIGN LEGAL INTELLIGENCE-SLI
 
 > Ce document définit les attentes spécifiques pour **Claude**, l'agent expert en raisonnement complexe, refactorisation et UI/UX premium.
 
