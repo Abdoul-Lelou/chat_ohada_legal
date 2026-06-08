@@ -22,12 +22,28 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        router.push('/');
+        
+        const user = authData.user;
+        if (user) {
+          // Log login
+          await supabase.from('audit_logs').insert({
+            user_id: user.id,
+            action: 'login',
+            details: { email }
+          });
+
+          const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+          if (profile?.role === 'admin') {
+            router.push('/admin/users');
+          } else {
+            router.push('/');
+          }
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,

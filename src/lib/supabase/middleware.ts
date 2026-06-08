@@ -30,10 +30,33 @@ export async function updateSession(request: NextRequest) {
   // refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/auth');
+  const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
+
+  if (!user && !isAuthPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  if (user) {
+    // Check role for redirection and protection
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const role = profile?.role || 'user';
+
+    // Protect admin routes
+    if (isAdminPage && role !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+
+    // Redirect logged in users away from auth pages
+    if (isAuthPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = role === 'admin' ? '/admin' : '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
