@@ -1,4 +1,4 @@
-const ADMIN_EMAILS = new Set(['admin@itcs.com']);
+const ADMIN_EMAILS = new Set(['admin@itcs.com', 'admin@itc.com']);
 
 function normalize(value: string | null | undefined) {
   return value?.trim().toLowerCase();

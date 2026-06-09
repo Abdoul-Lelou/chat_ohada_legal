@@ -23,7 +23,9 @@ SET role = 'admin'
 WHERE id IN (
   SELECT id
   FROM auth.users
-  WHERE lower(email) IN ('admin@itcs.com', 'admin@itc.com')
+  WHERE lower(coalesce(raw_app_meta_data->>'role', '')) IN ('admin', 'administrateur')
+     OR lower(coalesce(raw_user_meta_data->>'role', '')) IN ('admin', 'administrateur')
+     OR lower(email) IN ('admin@itcs.com', 'admin@itc.com')
 );
 
 -- 2. CONVERSATIONS

@@ -120,6 +120,8 @@ begin
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url',
     case
+      when lower(coalesce(new.raw_app_meta_data->>'role', '')) in ('admin', 'administrateur') then 'admin'
+      when lower(coalesce(new.raw_user_meta_data->>'role', '')) in ('admin', 'administrateur') then 'admin'
       when lower(coalesce(new.email, '')) in ('admin@itcs.com', 'admin@itc.com') then 'admin'
       else 'user'
     end,

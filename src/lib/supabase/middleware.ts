@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { canAccessAdmin } from '@/lib/admin-access';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -40,27 +41,26 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user) {
-    // Temporary debug bypass: comment out role verification to inspect the admin area.
-    // const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    // const role = profile?.role || 'user';
-    // const canUserAccessAdmin = canAccessAdmin({
-    //   role,
-    //   email: user.email,
-    //   appMetadataRole: user.app_metadata?.role,
-    //   userMetadataRole: user.user_metadata?.role,
-    // });
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const role = profile?.role || 'user';
+    const canUserAccessAdmin = canAccessAdmin({
+      role,
+      email: user.email,
+      appMetadataRole: user.app_metadata?.role,
+      userMetadataRole: user.user_metadata?.role,
+    });
 
     // Protect admin routes
-    // if (isAdminPage && !canUserAccessAdmin) {
-    //   const url = request.nextUrl.clone();
-    //   url.pathname = '/';
-    //   return NextResponse.redirect(url);
-    // }
+    if (isAdminPage && !canUserAccessAdmin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
 
     // Redirect logged in users away from auth pages
     if (isAuthPage) {
       const url = request.nextUrl.clone();
-      url.pathname = '/admin/users';
+      url.pathname = canUserAccessAdmin ? '/admin/users' : '/';
       return NextResponse.redirect(url);
     }
   }
