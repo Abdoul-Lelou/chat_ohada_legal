@@ -102,12 +102,32 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name, avatar_url)
+  insert into public.profiles (
+    id,
+    email,
+    full_name,
+    avatar_url,
+    role,
+    status,
+    daily_limit,
+    monthly_limit,
+    daily_usage,
+    monthly_usage
+  )
   values (
     new.id,
     new.email,
     new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'avatar_url'
+    new.raw_user_meta_data->>'avatar_url',
+    case
+      when lower(coalesce(new.email, '')) in ('admin@itcs.com', 'admin@itc.com') then 'admin'
+      else 'user'
+    end,
+    'active',
+    50,
+    500,
+    0,
+    0
   )
   on conflict (id) do nothing;
   return new;

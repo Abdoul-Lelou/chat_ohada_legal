@@ -1,10 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-
-function isAdminRole(role: string | null | undefined) {
-  const normalizedRole = role?.trim().toLowerCase();
-  return normalizedRole === 'admin' || normalizedRole === 'administrateur';
-}
+import { canAccessAdmin } from '@/lib/admin-access';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -48,10 +44,15 @@ export async function updateSession(request: NextRequest) {
     // Check role for redirection and protection
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     const role = profile?.role || 'user';
-    const canAccessAdmin = isAdminRole(role);
+    const canUserAccessAdmin = canAccessAdmin({
+      role,
+      email: user.email,
+      appMetadataRole: user.app_metadata?.role,
+      userMetadataRole: user.user_metadata?.role,
+    });
 
     // Protect admin routes
-    if (isAdminPage && !canAccessAdmin) {
+    if (isAdminPage && !canUserAccessAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       return NextResponse.redirect(url);
@@ -60,7 +61,7 @@ export async function updateSession(request: NextRequest) {
     // Redirect logged in users away from auth pages
     if (isAuthPage) {
       const url = request.nextUrl.clone();
-      url.pathname = canAccessAdmin ? '/admin' : '/';
+      url.pathname = canUserAccessAdmin ? '/admin' : '/';
       return NextResponse.redirect(url);
     }
   }

@@ -18,6 +18,14 @@ SET role = CASE
   ELSE 'user'
 END;
 
+UPDATE profiles
+SET role = 'admin'
+WHERE id IN (
+  SELECT id
+  FROM auth.users
+  WHERE lower(email) IN ('admin@itcs.com', 'admin@itc.com')
+);
+
 -- 2. CONVERSATIONS
 CREATE TABLE IF NOT EXISTS conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

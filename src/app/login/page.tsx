@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Scale, Loader2 } from 'lucide-react';
+import { canAccessAdmin } from '@/lib/admin-access';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,12 +14,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   
   const router = useRouter();
-  const supabase = createClient();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    const supabase = createClient();
 
     try {
       if (isLogin) {
@@ -38,7 +40,12 @@ export default function LoginPage() {
           });
 
           const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-          if (profile?.role === 'admin' || profile?.role === 'Administrateur') {
+          if (canAccessAdmin({
+            role: profile?.role,
+            email: user.email,
+            appMetadataRole: user.app_metadata?.role,
+            userMetadataRole: user.user_metadata?.role,
+          })) {
             router.push('/admin/users');
           } else {
             router.push('/');
