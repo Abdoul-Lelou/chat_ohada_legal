@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+function isAdminRole(role: string | null | undefined) {
+  const normalizedRole = role?.trim().toLowerCase();
+  return normalizedRole === 'admin' || normalizedRole === 'administrateur';
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -43,9 +48,10 @@ export async function updateSession(request: NextRequest) {
     // Check role for redirection and protection
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     const role = profile?.role || 'user';
+    const canAccessAdmin = isAdminRole(role);
 
     // Protect admin routes
-    if (isAdminPage && role !== 'admin') {
+    if (isAdminPage && !canAccessAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       return NextResponse.redirect(url);
@@ -54,7 +60,7 @@ export async function updateSession(request: NextRequest) {
     // Redirect logged in users away from auth pages
     if (isAuthPage) {
       const url = request.nextUrl.clone();
-      url.pathname = role === 'admin' ? '/admin' : '/';
+      url.pathname = canAccessAdmin ? '/admin' : '/';
       return NextResponse.redirect(url);
     }
   }
