@@ -11,6 +11,13 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS daily_usage int NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS monthly_usage int NOT NULL DEFAULT 0;
 
+UPDATE profiles
+SET role = CASE
+  WHEN lower(role) IN ('admin', 'administrateur') THEN 'admin'
+  WHEN lower(role) IN ('user', 'utilisateur') THEN 'user'
+  ELSE 'user'
+END;
+
 -- 2. CONVERSATIONS
 CREATE TABLE IF NOT EXISTS conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -51,6 +51,12 @@ create table if not exists profiles (
   email       text,
   full_name   text,
   avatar_url  text,
+  role        text not null default 'user' check (role in ('admin', 'user')),
+  status      text not null default 'active' check (status in ('active', 'suspended')),
+  daily_limit int not null default 50,
+  monthly_limit int not null default 500,
+  daily_usage int not null default 0,
+  monthly_usage int not null default 0,
   created_at  timestamp with time zone default timezone('utc', now()) not null,
   updated_at  timestamp with time zone default timezone('utc', now()) not null
 );
